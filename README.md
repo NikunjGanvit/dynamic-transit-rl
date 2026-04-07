@@ -213,7 +213,3 @@ openenv validate
 | `IMAGE_NAME` | ❌ | `transit-env` | Docker image name |
 
 ---
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
