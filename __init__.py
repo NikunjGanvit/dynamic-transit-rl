@@ -7,6 +7,9 @@ urban public transport management decisions.
 
 from openenv.core.env_server.mcp_types import CallToolAction, ListToolsAction
 
-from .client import TransitEnv
+try:
+    from .client import TransitEnv
+except ImportError:
+    from client import TransitEnv
 
 __all__ = ["TransitEnv", "CallToolAction", "ListToolsAction"]
