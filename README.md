@@ -1,3 +1,13 @@
+---
+title: Dynamic Transit RL
+emoji: 🚍
+colorFrom: blue
+colorTo: violet
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # 🚍 Dynamic Transit RL
 ### Production-Grade Urban Transit Operations Environment for OpenEnv
 
