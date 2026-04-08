@@ -1,110 +1,104 @@
-# Dynamic Transit RL — Urban Transit Operations Environment
+# 🚍 Dynamic Transit RL
+### Production-Grade Urban Transit Operations Environment for OpenEnv
 
-Dynamic Transit RL is a production-grade [OpenEnv](https://openenv.ai) environment for evaluating multi-agent and frontier AI models on urban public transport dispatching and operations management.
+[![OpenEnv](https://img.shields.io/badge/OpenEnv-Compliant-blueviolet)](https://openenv.ai)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🚍 The Mission
-You are the Transit Operations Manager for a major city. Your goal is to manage a fleet of buses across 4 critical routes to minimize passenger wait times, prevent stop overcrowding, and maintain high service satisfaction—even as hidden events (weather, demand spikes, breakdowns) disrupt your network.
+**Dynamic Transit RL** is a high-fidelity simulation environment designed to evaluate frontier AI models and multi-agent systems on the complex challenge of urban public transport orchestration. 
 
-## 🛠️ Action Space
-The agent can call the following tools to manage the fleet:
-- `get_system_status()`: Full snapshot of stops, buses, and metrics.
-- `dispatch_bus(route_id, bus_type)`: Deploy a new bus from the depot.
-- `reassign_bus(bus_id, target_route_id)`: Move a bus to where it's needed most.
-- `increase_frequency(route_id)`: Speed up buses to handle surge demand.
-- `hold_bus(bus_id, duration)`: Extend boarding time at overcrowded stops.
-- `skip_action()`: Advance simulation by one tick.
+As a **Transit Operations Manager**, your agent must handle real-time fleet dispatching across a 4-route city network while responding to deterministic but hidden events like weather disruptions, demand spikes, and equipment failures.
 
-## 📊 Tasks & Graders
-1. **Reduce Overcrowding (Easy)**: High initial queues at key hubs.
-2. **Balance Load (Medium)**: Uneven distribution across routes.
-3. **Demand Spike (Hard)**: Hidden events (Concert + Weather) cause sudden surges.
-4. **Multi-Objective (Expert)**: Cascading events, multiple breakdowns, and escalating crises.
+---
 
-All graders return a score in `[0.0, 1.0]` based on throughput, satisfaction, and crisis response speed.
+## 🌟 Key Features
 
-## 🚀 Setup & Usage
+*   **⚡ MCP-Integrated Tooling**: Full [Model Context Protocol](https://modelcontextprotocol.io) support for seamless interaction with modern LLM agents.
+*   **🧠 Complex Reward Engineering**: A composite reward function that balances wait times, passenger satisfaction, and bus occupancy (targeting the 60-80% efficiency sweet spot).
+*   **🌪️ Dynamic Event System**: Simulation of morning/evening rush hours, concerts, inclement weather, and random bus breakdowns.
+*   **📊 Multi-Level Benchmarking**: Four pre-configured tasks ranging from Easy (Overcrowding) to Expert (Multi-Objective Cascading Crises).
 
-### Prerequisites
-- Python 3.10+
-- Docker (for containerized evaluation)
+---
 
-### Local Dev Setup
+## 🛠️ The Action Space (Managerial Tools)
+
+Your agent manages the network using a professional suite of operational tools:
+
+| Tool | Action Type | Description |
+| :--- | :---: | :--- |
+| `dispatch_bus(route_id, bus_type)` | ⏱️ | Deploy a new bus (Standard, Articulated, or Mini) from the depot. |
+| `reassign_bus(bus_id, target_route)` | ⏱️ | Dynamically pivot a bus to a high-demand route. |
+| `increase_frequency(route_id)` | ⏱️ | Boost service frequency on a specific route (speeds up buses by 30%). |
+| `hold_bus(bus_id, duration)` | ⏱️ | Delay departure to maximize boarding at overcrowded stops. |
+| `get_system_status()` | 👁️ | Retrieve a full snapshot of stops, buses, and performance metrics. |
+| `get_route_analytics(route_id)` | 👁️ | Detailed deep-dive into specific route health and queue gradients. |
+
+> [!IMPORTANT]
+> **Action Tools** (labeled ⏱️) advance the simulation by one 5-minute tick. **Observation Tools** (labeled 👁️) do not consume time, allowing for strategic reasoning.
+
+---
+
+## 📉 Grading & Performance
+
+The environment evaluates agents based on three primary pillars:
+
+1.  **Efficiency**: Throughput vs. total passengers generated.
+2.  **Reliability**: Average wait times and queue stability.
+3.  **Satisfaction**: Dynamic passenger loyalty metric (penalized by wait times and crowding).
+
+### Default Task Baselines
+| Task | Difficulty | Multiplier | Baseline (Qwen2.5-72B) |
+| :--- | :--- | :---: | :---: |
+| **Reduce Overcrowding** | 🟢 Easy | 1.0x | 0.62 |
+| **Balance Load** | 🟡 Medium | 1.5x | 0.45 |
+| **Demand Spike** | 🟠 Hard | 2.5x | 0.35 |
+| **Multi-Objective** | 🔴 Expert | 5.0x | 0.20 |
+
+---
+
+## 🚀 Rapid Setup
+
+### 1. Local Installation
 ```bash
-# 1. Clone & Setup
-git clone <repo-url>
-cd dynamic-transit-rl
 python -m venv .venv
 source .venv/bin/activate
 pip install -r server/requirements.txt
-
-# 2. Run Validation
-openenv validate
 ```
 
----
-
-## 📊 Baseline Scores
-
-| Task | Difficulty | Baseline Score | Model |
-|------|-----------|---------------|-------|
-| reduce_overcrowding | Easy | ~0.450 | Qwen2.5-72B |
-| balance_load | Medium | ~0.350 | Qwen2.5-72B |
-| demand_spike | Hard | ~0.250 | Qwen2.5-72B |
-| multi_objective | Expert | ~0.150 | Qwen2.5-72B |
-
-*Scores are reproducible with seed-based deterministic simulation.*
-
----
-
-## 🔧 Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `HF_TOKEN` | ✅ | — | HuggingFace API key |
-| `API_BASE_URL` | ❌ | `https://router.huggingface.co/v1` | LLM API endpoint |
-| `MODEL_NAME` | ❌ | `Qwen/Qwen2.5-72B-Instruct` | Model identifier |
-
----
-
-## ⚖️ Simulating a Judge's Evaluation
-
-To test your submission exactly as a judge would:
-
-### 1. Set Environment Variables
-The judges will run your `inference.py` in an environment where these are strictly defined. Create a `.env` file or export them:
+### 2. Launch Environment (Terminal 1)
 ```bash
-export HF_TOKEN="your_token_here"
-export API_BASE_URL="https://router.huggingface.co/v1"
-export MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
-```
-
-### 2. Start the Environment (Server)
-In one terminal, start the transit server. This is the "environment" the agent will interact with:
-```bash
-source .venv/bin/activate
 export PYTHONPATH=.
 uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
 
-### 3. Run the Inference Script (Agent)
-In another terminal, run the agent script. This will talk to the server and execute the evaluation:
+### 3. Evaluate Agent (Terminal 2)
 ```bash
-source .venv/bin/activate
-export PYTHONPATH=.
+export HF_TOKEN="your_token"
 python inference.py
 ```
 
-### 4. Verify Output
-Check that the stdout emits **only** structured blocks. Note that:
-- The script must follow the `[START]/[STEP]/[END]` protocol strictly.
-- Success is determined by a score threshold (usually 0.1+).
+---
+
+## 🐳 Docker Deployment
+For standardized evaluation or deployment to **Hugging Face Spaces**:
+
+```bash
+docker build -t transit-env-rl .
+docker run -p 8000:8000 transit-env-rl
+```
 
 ---
 
 ## 📂 Project Structure
-- `inference.py`: Standard entry point for judges to run evaluation.
-- `server/`: Core simulation logic, MCP tools, and task definitions.
-- `client.py`: Public API client for environment interaction.
-- `tests/`: Basic verification suite for environment logic.
-- `openenv.yaml`: Metadata for OpenEnv registry.
-- `Dockerfile`: Container configuration for Hugging Face Spaces.
+```text
+.
+├── server/                 # Core Simulation & MCP Logic
+│   ├── simulation/         # Traffic, Passenger & Event Engines
+│   ├── tasks/              # Scenario Definitions
+│   └── transit_env.py      # MCP Environment Interface
+├── inference.py            # Evaluation Entry Point
+├── openenv.yaml            # Environment Metadata
+└── Dockerfile              # Production Container Config
+```
+
+Developed for the **Meta PyTorch OpenEnv Hackathon**.
