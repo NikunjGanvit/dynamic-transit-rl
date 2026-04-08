@@ -21,6 +21,18 @@ app = create_app(
     env_name="transit_env",
 )
 
+@app.get("/")
+async def root():
+    """Root endpoint providing environment metadata."""
+    return {
+        "name": "Dynamic Transit RL",
+        "version": "1.0.0",
+        "status": "online",
+        "description": "Urban Transit Operations Management Environment (OpenEnv)",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 
 def main():
     """
