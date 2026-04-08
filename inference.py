@@ -157,25 +157,43 @@ async def run_task(client: OpenAI, task_name: str) -> float:
                 tool_call = get_llm_action(client, system_status, history, step)
                 t_name, t_args = tool_call.get("tool", "skip_action"), tool_call.get("args", {})
                 
-                res = await env.call_tool(t_name, **t_args)
+                res_raw = await env.call_tool(t_name, **t_args)
                 
+                # MCP tools return JSON strings in this environment
+                try:
+                    res_json = json.loads(res_raw)
+                except:
+                    res_json = {"reward": 0.0, "done": False, "observation": res_raw}
+
                 if t_name in ACTION_TOOLS:
-                    reward = res.reward or 0.0
+                    reward = res_json.get("reward", 0.0)
                     rewards.append(reward)
                     steps_taken += 1
                     
+                    done = res_json.get("done", False)
                     log_step(step=steps_taken, action=f"{t_name}({json.dumps(t_args)})", 
-                             reward=reward, done=res.done, error=None)
+                             reward=reward, done=done, error=None)
                     
                     history.append(f"Step {steps_taken}: {t_name} -> {reward:.2f}")
+                    if done:
+                        res.done = True # Update loop condition
                 
-                if res.done: break
+                if res_json.get("done", False): break
                 system_status = await env.call_tool("get_system_status")
 
-            final_score = res.metadata.get("final_score", 0.0) if res.metadata else 0.0
+            # Extract final score if available
+            if hasattr(res, "observation") and res.observation.metadata:
+                final_score = res.observation.metadata.get("final_score", 0.0)
+            elif hasattr(res, "metadata") and res.metadata:
+                final_score = res.metadata.get("final_score", 0.0)
+            else:
+                # Fallback if episode not finished: compute current graded score
+                final_score = sum(rewards) / len(rewards) if rewards else 0.0
             
-        except:
-            pass
+        except Exception as e:
+            print(f"[DEBUG] Error in run_task: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
         finally:
             log_end(success=final_score >= 0.1, steps=steps_taken, score=final_score, rewards=rewards)
             return final_score
