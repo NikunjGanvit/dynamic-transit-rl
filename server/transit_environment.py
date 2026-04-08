@@ -256,7 +256,8 @@ class TransitEnvironment(MCPEnvironment):
             self._engine, reward_weights
         )
         self._rewards.append(self._last_reward)
-        self._state.step_count += 1
+        # self._state.step_count += 1  # REMOVED: Managed by step() / step_async()
+
 
     def reset(
         self,
@@ -318,7 +319,7 @@ class TransitEnvironment(MCPEnvironment):
                 "status": "ready",
                 "task": task_info,
                 "objective": objective,
-                "initial_observation": obs_dict,
+                "observation": obs_dict,
                 "message": (
                     f"Transit environment reset for task: {task_info['task_name']} "
                     f"({task_info['difficulty']}). Use get_task_info() to see your objective, "
@@ -358,7 +359,14 @@ class TransitEnvironment(MCPEnvironment):
         MCP actions are handled by the base class (tool calls).
         The simulation advances when action tools are called.
         """
-        self._state.step_count += 1
+        # Only increment step_count for actions that advance time
+        is_time_advancing = False
+        if hasattr(action, "tool_name") and action.tool_name in ["reassign_bus", "dispatch_bus", "increase_frequency", "hold_bus", "skip_action"]:
+            is_time_advancing = True
+        
+        if is_time_advancing:
+            self._state.step_count += 1
+
 
         # Delegate to base class for MCP routing
         obs = super().step(action, timeout_s=timeout_s, **kwargs)
@@ -386,7 +394,13 @@ class TransitEnvironment(MCPEnvironment):
         **kwargs: Any,
     ) -> Observation:
         """Async step used by WebSocket handler."""
-        self._state.step_count += 1
+        is_time_advancing = False
+        if hasattr(action, "tool_name") and action.tool_name in ["reassign_bus", "dispatch_bus", "increase_frequency", "hold_bus", "skip_action"]:
+            is_time_advancing = True
+
+        if is_time_advancing:
+            self._state.step_count += 1
+
         obs = await super().step_async(action, timeout_s=timeout_s, **kwargs)
         
         if obs.metadata is None:
