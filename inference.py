@@ -59,7 +59,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -157,7 +157,12 @@ async def run_task(client: OpenAI, task_name: str) -> float:
                 tool_call = get_llm_action(client, system_status, history, step)
                 t_name, t_args = tool_call.get("tool", "skip_action"), tool_call.get("args", {})
                 
-                res_raw = await env.call_tool(t_name, **t_args)
+                try:
+                    res_raw = await env.call_tool(t_name, **t_args)
+                    step_error = None
+                except Exception as e:
+                    res_raw = json.dumps({"reward": 0.0, "done": True, "error": str(e)})
+                    step_error = str(e)
                 
                 # MCP tools return JSON strings in this environment
                 try:
@@ -172,7 +177,7 @@ async def run_task(client: OpenAI, task_name: str) -> float:
                     
                     done = res_json.get("done", False)
                     log_step(step=steps_taken, action=f"{t_name}({json.dumps(t_args)})", 
-                             reward=reward, done=done, error=None)
+                             reward=reward, done=done, error=step_error)
                     
                     history.append(f"Step {steps_taken}: {t_name} -> {reward:.2f}")
                     if done:
